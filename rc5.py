@@ -1,4 +1,5 @@
 from typing import Tuple
+import numpy as np
 
 class RC5():
     def __init__(self,W,R,b):
@@ -21,7 +22,12 @@ class RC5():
         self.A=0
         self.B=0
 
-
+    def uint(self,n:int):
+        if self.W==16:
+            return np.uint16(n)
+        if self.W==32:
+            return np.uint32(n)
+        return np.uint64(n)
     def split(self,key:bytes):
         key+=b'\x00'*min(self.b%self.u,(self.u-self.b%(self.u)))
         for i in range(self.b-1,-1,-1):
@@ -39,8 +45,8 @@ class RC5():
         i=j=0
         A=B=0
         for counter in range(3*max(self.t,self.c)):
-            A=self.S[i]=self.__lshift(self.S[i]+A+B,3)
-            B=self.L[j]=self.__lshift(self.L[j]+A+B,A+B)
+            A=self.S[i]=np.left_shift(self.uint(self.S[i]+A+B),3)
+            B=self.L[j]=np.left_shift(self.uint(self.L[j]+A+B),self.uint(A+B))
             i=(i+1)%self.t
             j=(j+1)%self.c
         self.A,self.B=A,B

@@ -13,11 +13,10 @@ def test_split():
     assert rc5_1.split(b'\x01\x23\x45\x67')==[8961, 26437]
 
 def test_extend():
-    #assert rc5_1
     assert rc5_1.extend()==[47073, 22040, 62543, 37510, 12477, 52980, 27947, 2914, 43417, 18384, 58887, 33854, 8821, 49324, 24291, 64794, 39761, 14728, 55231, 30198, 5165, 45668, 20635, 61138, 36105, 11072]
 
 def test_mixing():
-    assert False
+    assert rc5_1.mixing()==(55154,14826)
 
 def test_encrypt_block():
     assert False
