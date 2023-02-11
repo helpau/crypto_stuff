@@ -9,20 +9,17 @@ class RC5():
         self.t=2*(self.R+1)
         self.c=max(self.b,1)//(self.u)
         self.L=[0]*self.c
+        self.S=[]
+        self.mod = 2 ** self.W
+        self.mask = self.mod - 1
         if self.W == 16:
             self.P,self.Q=(0xB7E1, 0x9E37)
         elif self.W == 32:
             self.P,self.Q= (0xB7E15163, 0x9E3779B9)
         elif self.W == 64:
             self.P,self.Q= (0xB7E151628AED2A6B, 0x9E3779B97F4A7C15)
-
-    def __lshift(self, val, n):
-        n %= self.w
-        return ((val << n) & self.mask) | ((val & self.mask) >> (self.w - n))
-
-    def __rshift(self, val, n):
-        n %= self.w
-        return ((val & self.mask) >> n) | (val << (self.w - n) & self.mask)
+        self.A=0
+        self.B=0
 
 
     def split(self,key:bytes):
@@ -32,29 +29,36 @@ class RC5():
 
         return self.L
 
-    def expansion(self):
-        P,Q=self.const_gen()
-        S=[P]
-        for i in range(1,t):
-            S.append(S[-1]+Q)
+    def extend(self):
+        self.S=[self.P]
+        for i in range(1,self.t):
+            self.S.append((self.S[i-1]+self.Q)%self.mod)
+        return self.S
 
     def mixing(self):
         i=j=0
         A=B=0
-        c=0
-        for i in range(3*max(self.t,c)):
-            A=S[i]=(S[i]+A+B)<<3
-            B=L[j]=(L[j]+A+B)<<(A+B)
+        for counter in range(3*max(self.t,self.c)):
+            A=self.S[i]=self.__lshift(self.S[i]+A+B,3)
+            B=self.L[j]=self.__lshift(self.L[j]+A+B,A+B)
             i=(i+1)%self.t
-            j=(j+1)%c
-    def encrypt(plaintext,key):
-        A=A+S[0]
-        B=B+S[1]
-        for i in range(1,self.r+1):
-            A=((A^B)<<B)+S[2*i]
-            B=((B^A)<<A)+S[2*i+1]
+            j=(j+1)%self.c
+        self.A,self.B=A,B
+        return (A,B)
+    def encrypt_block(self,plaintext,key):
+        self.split(key)
+        self.extend()
+        self.mixing()
+        self.A=self.A+self.S[0]
+        self.B=self.B+self.S[1]
+        for i in range(1,self.R+1):
+            self.A=(self.__lshift(self.A^self.B,self.B)+self.S[2*i])%self.mod
+            self.B=(self.__lshift(self.B^self.A,self.A)+self.S[2*i+1])%self.mod
+
+        return (self.A.to_bytes(self.u, byteorder='big')
+                + self.B.to_bytes(self.u, byteorder='big')) 
         
-    def decrypt():
+    def decrypt_block():
         for i in range(r,0,-1):
             B=((B-S[2*i+1])>>A)^A
             A=((A-S[2*i])>>B)^B
